@@ -24,7 +24,9 @@ L.TileLayer = L.Class.extend({
 		reuseTiles: false,
 		*/
 		unloadInvisibleTiles: L.Browser.mobile,
-		updateWhenIdle: L.Browser.mobile
+		updateWhenIdle: L.Browser.mobile,
+		targetPaneName: 'tilePane', // Allow rendering in a different pane
+		alwaysClearContainerOnReset: false // Allow force container reinit after reset operations
 	},
 
 	initialize: function (url, options) {
@@ -54,6 +56,9 @@ L.TileLayer = L.Class.extend({
 	onAdd: function (map) {
 		this._map = map;
 
+		// Allow overriding which pane is used when drawing
+		this._pane = this._map._panes[this.options.targetPaneName];
+
 		// create a container div for tiles
 		this._initContainer();
 
@@ -81,7 +86,8 @@ L.TileLayer = L.Class.extend({
 	},
 
 	onRemove: function (map) {
-		map._panes.tilePane.removeChild(this._container);
+		//map._panes.tilePane.removeChild(this._container);
+		map._panes[this.options.targetPaneName].removeChild(this._container);
 
 		map.off({
 			'viewreset': this._resetCallback,
@@ -97,7 +103,8 @@ L.TileLayer = L.Class.extend({
 	},
 
 	bringToFront: function () {
-		var pane = this._map._panes.tilePane;
+		//var pane = this._map._panes.tilePane;
+		var pane = this._map._panes[this.options.targetPaneName];
 
 		if (this._container) {
 			pane.appendChild(this._container);
@@ -108,7 +115,8 @@ L.TileLayer = L.Class.extend({
 	},
 
 	bringToBack: function () {
-		var pane = this._map._panes.tilePane;
+		//var pane = this._map._panes.tilePane;
+		var pane = this._map._panes[this.options.targetPaneName];
 
 		if (this._container) {
 			pane.insertBefore(this._container, pane.firstChild);
@@ -151,7 +159,8 @@ L.TileLayer = L.Class.extend({
 
 	redraw: function () {
 		if (this._map) {
-			this._map._panes.tilePane.empty = false;
+			//this._map._panes.tilePane.empty = false;
+			this._map._panes[this.options.targetPaneName].empty = false;
 			this._reset(true);
 			this._update();
 		}
@@ -201,10 +210,11 @@ L.TileLayer = L.Class.extend({
 	},
 
 	_initContainer: function () {
-		var tilePane = this._map._panes.tilePane;
+		//var tilePane = this._map._panes.tilePane;
+		var tilePane = this._map._panes[this.options.targetPaneName];
 
 		if (!this._container || tilePane.empty) {
-			this._container = L.DomUtil.create('div', 'leaflet-layer');
+			this._container = L.DomUtil.create('div', 'leaflet-layer leaflet-tile-layer');
 
 			this._updateZIndex();
 
@@ -237,7 +247,7 @@ L.TileLayer = L.Class.extend({
 			this._unusedTiles = [];
 		}
 
-		if (clearOldContainer && this._container) {
+		if ((this.options.alwaysClearContainerOnReset || clearOldContainer) && this._container) {
 			this._container.innerHTML = "";
 		}
 
